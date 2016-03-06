@@ -1,10 +1,16 @@
+import sys
 import cv2
 import numpy as np
 
 def main():
 
+    print(len(sys.argv))
+    if len(sys.argv) != 2:
+        print("Usage: python3 sudoku.py [image]")
+        sys.exit()
+
     # Load Image
-    img = cv2.imread('sudoku.jpg')
+    img = cv2.imread(sys.argv[1])
     blur = cv2.GaussianBlur(img,(5,5),0) # Tuple level of blur, must be odd
     gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY) # Grayscale
 
@@ -33,14 +39,25 @@ def main():
             max_area = area
             best_cnt = cnt
     
-    cv2.drawContours(mask, [best_cnt], 0, 255, 2)
+    cv2.drawContours(mask, [best_cnt], 0, 255, -1)
     #cv2.drawContours(mask, [best_cnt], 0, 0, 2)
 
+    #masked = cv2.bitwise_and(adjusted_src,mask)
+
+    sobelx = cv2.Sobel(adjusted_src,-1,2,0,ksize=5)
+    sobely = cv2.Sobel(adjusted_src,-1,0,2,ksize=5)
+    
+    maskedx = cv2.bitwise_and(sobelx,mask)
+    maskedy = cv2.bitwise_and(sobely,mask)
+
     # Display Image
-    cv2.namedWindow('thresh')
+    #cv2.namedWindow('masked')
+    #cv2.namedWindow('res')
     #cv2.createTrackbar('B', 'thresh', 5, 100, remake)
     #cv2.setTrackbarPos('B', 'thresh', 7)
-    cv2.imshow('thresh', mask)
+    cv2.imshow('maskedx', maskedx)
+    cv2.imshow('maskedy', maskedy)
+    cv2.imshow('adjusted_src', adjusted_src)
     cv2.waitKey(0)              # Waits for any keypress
     cv2.destroyAllWindows()               
 
