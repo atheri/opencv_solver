@@ -133,39 +133,45 @@ def main():
             output[r*50:(r+1)*50 , c*50:(c+1)*50] = warp[r*50:(r+1)*50 , c*50:(c+1)*50].copy()
 
     # Digit recognizer
+    size = 50
     digit_img = cv2.imread('digits.png')
-    digit_gray = cv2.cvtColor(digit_img, cv2.COLOR_BGR2GRAY)
+    digit_gray = cv2.cvtColor(digit_img, cv2.COLOR_BGR2GRAY) # Grayscale
+    _, digit_thresh = cv2.threshold(digit_gray, 200, 255, cv2.THRESH_BINARY_INV)
+    digit_cells = [np.hsplit(row,9) for row in np.vsplit(digit_thresh,9)]
+    digit_cells = np.array(digit_cells)
+    for i in range(9):
+        for j in range(9):
+            digit_cells[i][j] = cv2.rectangle(digit_cells[i][j], (0,0), (size-1,size-1), 0, 4)
 
-    # Split image to 5500 cells, 20x20 each
-    cells = [np.hsplit(row,100) for row in np.vsplit(digit_gray,55)]
-    cells = np.array(cells)
+    digit_cells = digit_cells[:,:].reshape(-1,size*size).astype(np.float32)
+    train = digit_cells
 
-    # Prepare train_data and
-    train = cells[:,:100].reshape(-1,400).astype(np.float32)
+    l = [-1,-1,-1, 6,-1, 4, 7,-1,-1,
+          7,-1, 6,-1,-1,-1,-1,-1, 9,
+         -1,-1,-1,-1,-1, 5,-1, 8,-1,
+         -1, 7,-1,-1, 2,-1,-1, 9, 3,
+          8,-1,-1,-1,-1,-1,-1,-1, 5,
+          4, 3,-1,-1, 1,-1,-1, 7,-1,
+         -1, 5,-1, 2,-1,-1,-1,-1,-1,
+          3,-1,-1,-1,-1,-1, 2,-1, 8,
+         -1,-1, 2, 3,-1, 1,-1,-1,-1]
+    train_labels = np.array(l)
     
-    # Labels
-    k = list(range(10))
-    k.append(-1)
-    train_labels = np.repeat(k,500)[:,np.newaxis]
-
     # KNN
     knn = cv2.ml.KNearest_create()
     knn.train(train, cv2.ml.ROW_SAMPLE, train_labels)
 
     # Feed image
     _, output_thresh = cv2.threshold(output, 200, 255, cv2.THRESH_BINARY_INV)
-    output_resize = cv2.resize(output_thresh, (180,180), interpolation=cv2.INTER_AREA)
-    sudoku_cells = [np.hsplit(row,9) for row in np.vsplit(output_resize,9)]
+    sudoku_cells = [np.hsplit(row,9) for row in np.vsplit(output_thresh,9)]
     sudoku_cells = np.array(sudoku_cells)
     for i in range(9):
         for j in range(9):
-            sudoku_cells[i][j] = cv2.rectangle(sudoku_cells[i][j], (0,0), (19,19), 0, 3)
+            sudoku_cells[i][j] = cv2.rectangle(sudoku_cells[i][j], (0,0), (size-1,size-1), 0, 4)
 
-    cv2.imshow('03', sudoku_cells[0][3])
-    sudoku_cells = sudoku_cells[:,:].reshape(-1,400).astype(np.float32)
+    cv2.imshow('03', sudoku_cells[5][1])
+    sudoku_cells = sudoku_cells[:,:].reshape(-1,size*size).astype(np.float32)
     
-    cv2.imshow('output_reize', output_resize)
-
     # Test
     """
     nine = cv2.imread('9.jpg')
@@ -179,7 +185,7 @@ def main():
     nine1 = np.array(nine1).reshape(-1,400).astype(np.float32)
     """
 
-    ret,result,neighbours,dist = knn.findNearest(sudoku_cells,k=21)
+    ret,result,neighbours,dist = knn.findNearest(sudoku_cells,k=1)
 
 
     result = result.reshape(9,9)
@@ -187,6 +193,7 @@ def main():
 
     cv2.imshow('Original', img)
     cv2.imshow('Output', output)
+    cv2.imwrite('output.png', output)
     
     cv2.waitKey(0)              # Waits for any keypress
     cv2.destroyAllWindows()               
@@ -199,7 +206,7 @@ def find_n_largest_contours(n, contours):
 
 def print_board(board):
     flat = board.flatten()
-    flat = [0 if x == -1 else int(x) for x in flat]
+    flat = [' ' if x == -1 else int(x) for x in flat]
     
     flat = [flat[i:i+3] for i in range(0, len(flat), 3)]
     flat = [flat[i:i+3] for i in range(0, len(flat), 3)]
