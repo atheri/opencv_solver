@@ -134,7 +134,7 @@ def main():
 
     # Digit recognizer
     size = 50
-    digit_img = cv2.imread('digits.png')
+    digit_img = cv2.imread('img/digits.png')
     digit_gray = cv2.cvtColor(digit_img, cv2.COLOR_BGR2GRAY) # Grayscale
     _, digit_thresh = cv2.threshold(digit_gray, 200, 255, cv2.THRESH_BINARY_INV)
     digit_cells = [np.hsplit(row,9) for row in np.vsplit(digit_thresh,9)]
