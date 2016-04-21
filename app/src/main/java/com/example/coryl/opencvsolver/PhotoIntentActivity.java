@@ -1,8 +1,6 @@
 package com.example.coryl.opencvsolver;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -11,7 +9,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -33,19 +30,15 @@ public class PhotoIntentActivity extends AppCompatActivity {
     // file url to store image
     private Uri fileUri;
 
-
-    private ImageView imgPreview;
-    private Button btnCapturePicture;
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        imgPreview = (ImageView) findViewById(R.id.imgPreview);
-        btnCapturePicture = (Button) findViewById(R.id.btnCapturePicture);
+        Button btnCapturePicture = (Button) findViewById(R.id.btnCapturePicture);
 
         // Button capture image listener
+        assert btnCapturePicture != null;
         btnCapturePicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -77,7 +70,7 @@ public class PhotoIntentActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 // Capture success
                 // display in preview
-                previewCapturedImage();
+                launchUploadActivity();
             } else if (resultCode == RESULT_CANCELED) {
                 // user cancelled image capture
                 Toast.makeText(getApplicationContext(), "User cancelled image capture", Toast.LENGTH_SHORT).show();
@@ -86,6 +79,12 @@ public class PhotoIntentActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Failed to capture image", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void launchUploadActivity(){
+        Intent i = new Intent(PhotoIntentActivity.this, UploadActivity.class);
+        i.putExtra("filePath", fileUri.getPath());
+        startActivity(i);
     }
 
     // Launches camera app via intent
@@ -98,19 +97,6 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
         // start image capture intent
         startActivityForResult(intent, CAMERA_CAPTURE_IMAGE_REQUEST_CODE);
-    }
-
-    private void previewCapturedImage() {
-        try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-
-            options.inSampleSize = 4;
-
-            final Bitmap bitmap = BitmapFactory.decodeFile(fileUri.getPath(), options);
-            imgPreview.setImageBitmap(bitmap);
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-        }
     }
 
     // Creating file uri to store image/video

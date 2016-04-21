@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">OpenCV Solver</string>
-    <string name="open_camera">Take Picture</string>
+    <string name="open_camera">Capture Image</string>
     <string name="image_desc">Image Thumbnail</string>
-    <string name="preview_text">Preview</string>
+    <string name="preview_text">Lots of text or pictures explaining what to do or soemthing</string>
+    <string name="btnUploadToServer">Upload</string>
 </resources>
