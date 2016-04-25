@@ -11,14 +11,19 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.DataOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
 
 public class UploadActivity extends AppCompatActivity {
 
     private Bitmap bitmap;
+    String attachmentName = "bitmap";
+    String attachmentFileName = "bitmap.bmp";
+    String lineEnd = "\r\n";
+    String twoHyphens = "--";
+    String boundary = "*****";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,12 +59,40 @@ public class UploadActivity extends AppCompatActivity {
             try {
                 URL url = new URL(Config.FILE_UPLOAD_URL);
 
+                // Setup request
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setDoInput(true);
                 connection.setDoOutput(true);
+                connection.setUseCaches(false);
                 connection.setRequestMethod("POST");
-                OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-                writer.write("message=" + "COry is sending");
-                writer.close();
+                connection.setRequestProperty("Connection", "Keep-Alive");
+                connection.setRequestProperty("Cache-Control", "no-cache");
+                connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                // Start content wrapper
+                DataOutputStream request = new DataOutputStream(connection.getOutputStream());
+                request.writeBytes(twoHyphens + boundary + lineEnd);
+                request.writeBytes("Content-Disposition: form-data; name=\"" +
+                        attachmentName + "\";filename=\"" +
+                        attachmentFileName + "\"" + lineEnd);
+                request.writeBytes(lineEnd);
+
+                // Covert bitmap to ByteBuffer
+                int bytes = bitmap.getByteCount();
+                ByteBuffer buffer = ByteBuffer.allocate(bytes);
+                bitmap.copyPixelsToBuffer(buffer);
+                byte[] pixels = buffer.array();
+
+                request.write(pixels);
+
+                // End content wrapper
+                request.writeBytes(lineEnd);
+                request.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                // flush output buffer
+                request.flush();
+                request.close();
+
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     return "Success"; //TODO do something else
                 } else {
@@ -74,7 +107,7 @@ public class UploadActivity extends AppCompatActivity {
         protected void onPostExecute(String s) {
             //TODO check this.exception
             //TODO do something with the success
-            Log.d("HTTP STATUS:", s);
+            Log.d("CJL:", "HTTP STATUS: " + s);
         }
     }
 
