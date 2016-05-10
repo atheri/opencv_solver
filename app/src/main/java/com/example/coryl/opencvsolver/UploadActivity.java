@@ -11,20 +11,29 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.ByteBuffer;
 
 public class UploadActivity extends AppCompatActivity {
 
     private Bitmap bitmap;
-    String attachmentName = "bitmap";
-    String attachmentFileName = "bitmap.bmp";
     String lineEnd = "\r\n";
     String twoHyphens = "--";
     String boundary = "*****";
-
+    String file_path = "";
+    int bytesRead, bytesAvailable, bufferSize;
+    byte[] buffer;
+    int maxBufferSize = 1*1024*1024;
+    String filename = "camera.png";
+    int severResponseCode = 0;
+    String result;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,6 +44,7 @@ public class UploadActivity extends AppCompatActivity {
 
         // image or video path that is captured in previous activity
         final String filePath = i.getStringExtra("filePath");
+        file_path = filePath;
 
         // set imgPreview to image at filePath
         previewImage(filePath);
@@ -58,46 +68,75 @@ public class UploadActivity extends AppCompatActivity {
         protected String doInBackground(String... urls) {
             try {
                 URL url = new URL(Config.FILE_UPLOAD_URL);
+                File sourceFile = new File(file_path);
+                FileInputStream fis = new FileInputStream(sourceFile);
 
                 // Setup request
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setDoInput(true);
-                connection.setDoOutput(true);
-                connection.setUseCaches(false);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Connection", "Keep-Alive");
-                connection.setRequestProperty("Cache-Control", "no-cache");
-                connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+                conn.setUseCaches(false);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Connection", "Keep-Alive");
+                conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                conn.setRequestProperty("Cache-Control", "no-cache");
+                conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                conn.setRequestProperty("uploaded_file", filename);
 
                 // Start content wrapper
-                DataOutputStream request = new DataOutputStream(connection.getOutputStream());
-                request.writeBytes(twoHyphens + boundary + lineEnd);
-                request.writeBytes("Content-Disposition: form-data; name=\"" +
-                        attachmentName + "\";filename=\"" +
-                        attachmentFileName + "\"" + lineEnd);
-                request.writeBytes(lineEnd);
+                DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+                dos.writeBytes(twoHyphens + boundary + lineEnd);
+                dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""+ filename +"\"" + lineEnd);
+                dos.writeBytes(lineEnd);
 
-                // Covert bitmap to ByteBuffer
-                int bytes = bitmap.getByteCount();
-                ByteBuffer buffer = ByteBuffer.allocate(bytes);
-                bitmap.copyPixelsToBuffer(buffer);
-                byte[] pixels = buffer.array();
+                bytesAvailable = fis.available();
 
-                request.write(pixels);
+                bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                buffer = new byte[bufferSize];
 
-                // End content wrapper
-                request.writeBytes(lineEnd);
-                request.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                bytesRead = fis.read(buffer, 0, bufferSize);
 
-                // flush output buffer
-                request.flush();
-                request.close();
-
-                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    return "Success"; //TODO do something else
-                } else {
-                    return "Failure"; //TODO Do something else
+                while(bytesRead > 0) {
+                    dos.write(buffer, 0, bufferSize);
+                    bytesAvailable = fis.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    bytesRead = fis.read(buffer, 0, bufferSize);
                 }
+
+                dos.writeBytes(lineEnd);
+                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                fis.close();
+                dos.flush();
+                dos.close();
+
+                severResponseCode = conn.getResponseCode();
+                String serverResponseMessage = conn.getResponseMessage();
+                Log.e("CJL:", "HTTP Response is: " + serverResponseMessage + ": " + severResponseCode);
+
+                if (severResponseCode == HttpURLConnection.HTTP_OK) {
+                    InputStream responseStream = new BufferedInputStream(conn.getInputStream());
+                    BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(responseStream));
+
+                    String line = "";
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    while ((line = responseStreamReader.readLine()) != null) {
+                        stringBuilder.append(line).append("\n");
+                    }
+                    responseStreamReader.close();
+
+                    result = stringBuilder.toString();
+
+                    responseStream.close();
+
+                } else {
+                    result =  "Failure"; //TODO Do something else
+                }
+
+                conn.disconnect();
+                return result;
+
             } catch (Exception e) {
                 this.exception = e;
                 return null;
@@ -107,7 +146,8 @@ public class UploadActivity extends AppCompatActivity {
         protected void onPostExecute(String s) {
             //TODO check this.exception
             //TODO do something with the success
-            Log.d("CJL:", "HTTP STATUS: " + s);
+
+            Log.d("CJL:", s);
         }
     }
 
