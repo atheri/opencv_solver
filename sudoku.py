@@ -169,7 +169,7 @@ def main():
         for j in range(9):
             sudoku_cells[i][j] = cv2.rectangle(sudoku_cells[i][j], (0,0), (size-1,size-1), 0, 4)
 
-    cv2.imshow('03', sudoku_cells[5][1])
+    #cv2.imshow('03', sudoku_cells[5][1])
     sudoku_cells = sudoku_cells[:,:].reshape(-1,size*size).astype(np.float32)
     
     # Test
@@ -187,16 +187,19 @@ def main():
 
     ret,result,neighbours,dist = knn.findNearest(sudoku_cells,k=1)
 
+    sudoku_list = [0 if x == -1 else int(x) for x in result]
+    sudoku_string = ''.join(map(str, sudoku_list))
+    print(sudoku_string)
+    #result = result.reshape(9,9)
+    #print_board(result)
 
-    result = result.reshape(9,9)
-    print_board(result)
-
-    cv2.imshow('Original', img)
-    cv2.imshow('Output', output)
+    #cv2.imshow('Original', img)
+    #cv2.imshow('Output', output)
     cv2.imwrite('output.png', output)
     
     cv2.waitKey(0)              # Waits for any keypress
     cv2.destroyAllWindows()               
+    exit(0)
 
 def find_n_largest_contours(n, contours):
     area_list = [(cv2.contourArea(cnt), cnt) for cnt in contours]
