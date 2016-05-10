@@ -28,8 +28,10 @@
         </activity>
         <activity
             android:name=".UploadActivity"
-            android:screenOrientation="portrait"></activity>
-        <activity android:name=".SudokuActivity"></activity>
+            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".SudokuActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>
