@@ -50,12 +50,13 @@ public class UploadActivity extends AppCompatActivity {
         previewImage(filePath);
         bitmap = BitmapFactory.decodeFile(filePath);
 
-        Button btnUpload = (Button) findViewById(R.id.btnUpload);
+        final Button btnUpload = (Button) findViewById(R.id.btnUpload);
 
         assert btnUpload != null;
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnUpload.setVisibility(View.GONE);
                 new SendBitmap().execute(filePath);
             }
         });
@@ -144,10 +145,11 @@ public class UploadActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String s) {
-            //TODO check this.exception
-            //TODO do something with the success
-
             Log.d("CJL:", s);
+
+            Intent i = new Intent(UploadActivity.this, SudokuActivity.class);
+            i.putExtra("solution", s);
+            startActivity(i);
         }
     }
 
