@@ -7,7 +7,8 @@ def same_block(i,j): return (i/27 == j/27 and i%9/3 == j%9/3)
 def r(a):
     i = a.find('0')
     if i == -1:
-        sys.exit(a)
+        print a
+        sys.exit()
 
     excluded_numbers = set()
     for j in range(81):
