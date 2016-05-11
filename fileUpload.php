@@ -8,7 +8,7 @@
   $imageSave = imagepng($imageFile, $imagePath); 
   
   $output = array();
-  exec("python3 sudoku.py uploads/sudoku.jpg", $output);
+  exec("python3 sudoku.py ".$imagePath, $output);
   $solution = array();
   exec("python solver.py ".$output[0], $solution);
 
