@@ -132,36 +132,13 @@ def main():
             warp = cv2.warpPerspective(div, retval, (450,450))
             output[r*50:(r+1)*50 , c*50:(c+1)*50] = warp[r*50:(r+1)*50 , c*50:(c+1)*50].copy()
 
-    # Digit recognizer
-    size = 50
-    digit_img = cv2.imread('img/digits.png')
-    digit_gray = cv2.cvtColor(digit_img, cv2.COLOR_BGR2GRAY) # Grayscale
-    _, digit_thresh = cv2.threshold(digit_gray, 200, 255, cv2.THRESH_BINARY_INV)
-    digit_cells = [np.hsplit(row,9) for row in np.vsplit(digit_thresh,9)]
-    digit_cells = np.array(digit_cells)
-    for i in range(9):
-        for j in range(9):
-            digit_cells[i][j] = cv2.rectangle(digit_cells[i][j], (0,0), (size-1,size-1), 0, 4)
-
-    digit_cells = digit_cells[:,:].reshape(-1,size*size).astype(np.float32)
-    train = digit_cells
-
-    l = [-1,-1,-1, 6,-1, 4, 7,-1,-1,
-          7,-1, 6,-1,-1,-1,-1,-1, 9,
-         -1,-1,-1,-1,-1, 5,-1, 8,-1,
-         -1, 7,-1,-1, 2,-1,-1, 9, 3,
-          8,-1,-1,-1,-1,-1,-1,-1, 5,
-          4, 3,-1,-1, 1,-1,-1, 7,-1,
-         -1, 5,-1, 2,-1,-1,-1,-1,-1,
-          3,-1,-1,-1,-1,-1, 2,-1, 8,
-         -1,-1, 2, 3,-1, 1,-1,-1,-1]
-    train_labels = np.array(l)
-    
-    # KNN
     knn = cv2.ml.KNearest_create()
-    knn.train(train, cv2.ml.ROW_SAMPLE, train_labels)
+    train_data(1, 'img/digits.png', knn)
+    train_data(2, 'img/digits2.png', knn)
+    train_data(3, 'img/digits3.png', knn)
 
     # Feed image
+    size = 50
     _, output_thresh = cv2.threshold(output, 200, 255, cv2.THRESH_BINARY_INV)
     sudoku_cells = [np.hsplit(row,9) for row in np.vsplit(output_thresh,9)]
     sudoku_cells = np.array(sudoku_cells)
@@ -182,7 +159,7 @@ def main():
     nine1 = cv2.resize(nine1, (20,20), interpolation=cv2.INTER_AREA)
     cv2.imshow('after', nine1)
     
-    nine1 = np.array(nine1).reshape(-1,400).astype(np.float32)
+    nine1 = np.darray(nine1).reshape(-1,400).astype(np.float32)
     """
 
     ret,result,neighbours,dist = knn.findNearest(sudoku_cells,k=1)
@@ -224,6 +201,56 @@ def print_board(board):
             print('|',end=" ")
         print()
     print('-'*25)
+
+def train_data(n, filepath, knn):
+    # Digit recognizer
+    size = 50
+    digit_img = cv2.imread(filepath)
+    digit_gray = cv2.cvtColor(digit_img, cv2.COLOR_BGR2GRAY) # Grayscale
+    _, digit_thresh = cv2.threshold(digit_gray, 200, 255, cv2.THRESH_BINARY_INV)
+    digit_cells = [np.hsplit(row,9) for row in np.vsplit(digit_thresh,9)]
+    digit_cells = np.array(digit_cells)
+    for i in range(9):
+        for j in range(9):
+            digit_cells[i][j] = cv2.rectangle(digit_cells[i][j], (0,0), (size-1,size-1), 0, 4)
+
+    digit_cells = digit_cells[:,:].reshape(-1,size*size).astype(np.float32)
+    train = digit_cells
+    if n == 1:
+        l = [-1,-1,-1, 6,-1, 4, 7,-1,-1,
+              7,-1, 6,-1,-1,-1,-1,-1, 9,
+             -1,-1,-1,-1,-1, 5,-1, 8,-1,
+             -1, 7,-1,-1, 2,-1,-1, 9, 3,
+              8,-1,-1,-1,-1,-1,-1,-1, 5,
+              4, 3,-1,-1, 1,-1,-1, 7,-1,
+             -1, 5,-1, 2,-1,-1,-1,-1,-1,
+              3,-1,-1,-1,-1,-1, 2,-1, 8,
+             -1,-1, 2, 3,-1, 1,-1,-1,-1]
+    elif n == 2:
+        l = [ 2,-1,-1,-1,-1, 6, 1,-1,-1,
+              1,-1,-1,-1, 9, 2,-1, 8,-1,
+             -1,-1, 7,-1,-1,-1,-1,-1, 4,
+             -1, 2, 9, 8,-1,-1,-1,-1,-1,
+             -1, 7,-1,-1, 5,-1,-1, 2,-1,
+             -1,-1,-1,-1, 1, 7, 3, 5,-1,
+              4,-1,-1,-1,-1,-1, 9,-1,-1,
+             -1, 8,-1, 4, 1,-1,-1,-1, 7,
+             -1,-1, 3, 6,-1,-1,-1,-1, 5]
+    else:
+        l = [-1, 1,-1,-1, 8,-1,-1, 2,-1,
+              5,-1,-1,-1,-1,-1,-1,-1, 1,
+             -1, 2, 4, 1,-1, 3, 5, 7,-1,
+              1,-1,-1,-1,-1,-1,-1,-1, 5,
+             -1,-1, 5, 8,-1, 9, 4,-1,-1,
+              9,-1,-1,-1,-1,-1,-1,-1, 7,
+             -1, 5, 9, 4,-1, 2, 1, 8,-1,
+              4,-1,-1,-1,-1,-1,-1,-1, 2,
+             -1, 6,-1,-1, 1,-1,-1, 4,-1]
+    
+    train_labels = np.array(l)
+    
+    # KNN
+    knn.train(train, cv2.ml.ROW_SAMPLE, train_labels)
 
 if __name__ == '__main__':
     main()
